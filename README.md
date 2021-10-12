@@ -1,7 +1,7 @@
 ## go-acl
 
 [![Build status](https://ci.appveyor.com/api/projects/status/rbdyu7c39o2j0ru9?svg=true)](https://ci.appveyor.com/project/nathan-osman/go-acl)
-[![GoDoc](https://godoc.org/github.com/hectane/go-acl?status.svg)](https://godoc.org/github.com/hectane/go-acl)
+[![GoDoc](https://godoc.org/github.com/jazzy-crane/go-acl?status.svg)](https://godoc.org/github.com/jazzy-crane/go-acl)
 [![MIT License](http://img.shields.io/badge/license-MIT-9370d8.svg?style=flat)](http://opensource.org/licenses/MIT)
 
 Manipulating ACLs (Access Control Lists) on Windows is difficult. go-acl wraps the Windows API functions that control access to objects, simplifying the process.
@@ -11,8 +11,7 @@ Manipulating ACLs (Access Control Lists) on Windows is difficult. go-acl wraps t
 To use the package add the following imports:
 
     import (
-        "github.com/hectane/go-acl"
-        "golang.org/x/sys/windows"
+        "github.com/jazzy-crane/go-acl"
     )
 
 ### Examples
@@ -40,7 +39,7 @@ To grant read access to user "Alice" and deny write access to user "Bob":
 go-acl's `api` package exposes the individual Windows API functions that are used to manipulate ACLs. For example, to retrieve the current owner of a file:
 
     import (
-        "github.com/hectane/go-acl/api"
+        "github.com/jazzy-crane/go-acl/api"
         "golang.org/x/sys/windows"
     )
 

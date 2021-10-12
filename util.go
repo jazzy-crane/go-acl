@@ -3,7 +3,7 @@
 package acl
 
 import (
-	"github.com/hectane/go-acl/api"
+	"github.com/jazzy-crane/go-acl/api"
 	"golang.org/x/sys/windows"
 
 	"unsafe"
