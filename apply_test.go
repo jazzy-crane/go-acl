@@ -3,6 +3,7 @@
 package acl
 
 import (
+	"github.com/hectane/go-acl/api"
 	"golang.org/x/sys/windows"
 
 	"errors"
@@ -16,9 +17,49 @@ func TestApply(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
 	defer os.Remove(f.Name())
 	if err := Apply(
 		f.Name(),
+		true,
+		true,
+		DenyName(windows.GENERIC_ALL, "CREATOR OWNER"),
+	); err != nil {
+		t.Fatal(err)
+	}
+	r, err := os.Open(f.Name())
+	if err == nil {
+		r.Close()
+		t.Fatal("owner able to access file")
+	}
+}
+
+func TestApplyHandle(t *testing.T) {
+	f, err := ioutil.TempFile(os.TempDir(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(f.Name())
+
+	fName16, err := windows.UTF16PtrFromString(f.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fHandle, err := windows.CreateFile(fName16, windows.GENERIC_ALL, 0, nil, windows.OPEN_EXISTING, 0, windows.InvalidHandle)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer windows.CloseHandle(fHandle)
+
+	if err := ApplyHandle(
+		fHandle,
+		api.SE_FILE_OBJECT,
 		true,
 		true,
 		DenyName(windows.GENERIC_ALL, "CREATOR OWNER"),

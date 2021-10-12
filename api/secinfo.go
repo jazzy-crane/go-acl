@@ -2,12 +2,6 @@
 
 package api
 
-import (
-	"golang.org/x/sys/windows"
-
-	"unsafe"
-)
-
 // https://msdn.microsoft.com/en-us/library/windows/desktop/aa379593.aspx
 const (
 	SE_UNKNOWN_OBJECT_TYPE = iota
@@ -43,42 +37,9 @@ const (
 	UNPROTECTED_SACL_SECURITY_INFORMATION = 0x10000000
 )
 
-var (
-	procGetNamedSecurityInfoW = advapi32.MustFindProc("GetNamedSecurityInfoW")
-	procSetNamedSecurityInfoW = advapi32.MustFindProc("SetNamedSecurityInfoW")
-)
+//go:generate mkwinsyscall -output secinfogen_windows.go secinfo.go
 
-// https://msdn.microsoft.com/en-us/library/windows/desktop/aa446645.aspx
-func GetNamedSecurityInfo(objectName string, objectType int32, secInfo uint32, owner, group **windows.SID, dacl, sacl, secDesc *windows.Handle) error {
-	ret, _, _ := procGetNamedSecurityInfoW.Call(
-		uintptr(unsafe.Pointer(windows.StringToUTF16Ptr(objectName))),
-		uintptr(objectType),
-		uintptr(secInfo),
-		uintptr(unsafe.Pointer(owner)),
-		uintptr(unsafe.Pointer(group)),
-		uintptr(unsafe.Pointer(dacl)),
-		uintptr(unsafe.Pointer(sacl)),
-		uintptr(unsafe.Pointer(secDesc)),
-	)
-	if ret != 0 {
-		return windows.Errno(ret)
-	}
-	return nil
-}
-
-// https://msdn.microsoft.com/en-us/library/windows/desktop/aa379579.aspx
-func SetNamedSecurityInfo(objectName string, objectType int32, secInfo uint32, owner, group *windows.SID, dacl, sacl windows.Handle) error {
-	ret, _, _ := procSetNamedSecurityInfoW.Call(
-		uintptr(unsafe.Pointer(windows.StringToUTF16Ptr(objectName))),
-		uintptr(objectType),
-		uintptr(secInfo),
-		uintptr(unsafe.Pointer(owner)),
-		uintptr(unsafe.Pointer(group)),
-		uintptr(dacl),
-		uintptr(sacl),
-	)
-	if ret != 0 {
-		return windows.Errno(ret)
-	}
-	return nil
-}
+//sys GetNamedSecurityInfo(objectName string, objectType int32, secInfo uint32, owner **windows.SID, group **windows.SID, dacl *windows.Handle, sacl *windows.Handle, secDesc *windows.Handle) (rtn error) = advapi32.GetNamedSecurityInfoW
+//sys SetNamedSecurityInfo(objectName string, objectType int32, secInfo uint32, owner *windows.SID, group *windows.SID, dacl windows.Handle, sacl windows.Handle) (rtn error) = advapi32.SetNamedSecurityInfoW
+//sys GetSecurityInfo(handle windows.Handle, objectType int32, secInfo uint32, owner **windows.SID, group **windows.SID, dacl *windows.Handle, sacl *windows.Handle, secDesc *windows.Handle) (rtn error) = advapi32.GetSecurityInfo
+//sys SetSecurityInfo(handle windows.Handle, objectType int32, secInfo uint32, owner *windows.SID, group *windows.SID, dacl windows.Handle, sacl windows.Handle) (rtn error) = advapi32.SetSecurityInfo
