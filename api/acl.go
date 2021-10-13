@@ -63,7 +63,8 @@ const (
 )
 
 var (
-	procSetEntriesInAclW = advapi32.MustFindProc("SetEntriesInAclW")
+	procSetEntriesInAclW           = advapi32.MustFindProc("SetEntriesInAclW")
+	procGetExplicitEntriesFromAclW = advapi32.MustFindProc("GetExplicitEntriesFromAclW")
 )
 
 // https://msdn.microsoft.com/en-us/library/windows/desktop/aa379636.aspx
@@ -85,9 +86,16 @@ type ExplicitAccess struct {
 
 // https://msdn.microsoft.com/en-us/library/windows/desktop/aa379576.aspx
 func SetEntriesInAcl(entries []ExplicitAccess, oldAcl windows.Handle, newAcl *windows.Handle) error {
+	var entryPtr *ExplicitAccess
+	if len(entries) == 0 {
+		entryPtr = nil
+	} else {
+		entryPtr = &entries[0]
+	}
+
 	ret, _, _ := procSetEntriesInAclW.Call(
 		uintptr(len(entries)),
-		uintptr(unsafe.Pointer(&entries[0])),
+		uintptr(unsafe.Pointer(entryPtr)),
 		uintptr(oldAcl),
 		uintptr(unsafe.Pointer(newAcl)),
 	)
@@ -95,4 +103,29 @@ func SetEntriesInAcl(entries []ExplicitAccess, oldAcl windows.Handle, newAcl *wi
 		return windows.Errno(ret)
 	}
 	return nil
+}
+
+func GetExplicitEntriesFromAcl(acl windows.Handle) ([]ExplicitAccess, error) {
+	var count uint32
+	var ea *ExplicitAccess
+
+	ret, _, _ := procGetExplicitEntriesFromAclW.Call(
+		uintptr(acl),
+		uintptr(unsafe.Pointer(&count)),
+		uintptr(unsafe.Pointer(&ea)),
+	)
+	if ret != 0 {
+		return nil, windows.Errno(ret)
+	}
+
+	eaRtn := make([]ExplicitAccess, count)
+	iter := unsafe.Pointer(ea)
+	for i := uint32(0); i < count; i++ {
+		eaRtn[i] = *(*ExplicitAccess)(iter)
+		iter = unsafe.Pointer(uintptr(iter) + unsafe.Sizeof(eaRtn[0]))
+	}
+
+	_, _ = windows.LocalFree(windows.Handle(unsafe.Pointer(ea)))
+
+	return eaRtn, nil
 }

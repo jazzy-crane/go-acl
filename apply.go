@@ -5,8 +5,6 @@ package acl
 import (
 	"github.com/jazzy-crane/go-acl/api"
 	"golang.org/x/sys/windows"
-
-	"unsafe"
 )
 
 // Apply the provided access control entries to a file. If the replace
@@ -16,7 +14,7 @@ func Apply(name string, replace, inherit bool, entries ...api.ExplicitAccess) er
 	var oldAcl windows.Handle
 	if !replace {
 		var secDesc windows.Handle
-		api.GetNamedSecurityInfo(
+		if err := api.GetNamedSecurityInfo(
 			name,
 			api.SE_FILE_OBJECT,
 			api.DACL_SECURITY_INFORMATION,
@@ -25,7 +23,9 @@ func Apply(name string, replace, inherit bool, entries ...api.ExplicitAccess) er
 			&oldAcl,
 			nil,
 			&secDesc,
-		)
+		); err != nil {
+			return err
+		}
 		defer windows.LocalFree(secDesc)
 	}
 	var acl windows.Handle
@@ -36,7 +36,7 @@ func Apply(name string, replace, inherit bool, entries ...api.ExplicitAccess) er
 	); err != nil {
 		return err
 	}
-	defer windows.LocalFree((windows.Handle)(unsafe.Pointer(acl)))
+	defer windows.LocalFree(acl)
 	var secInfo uint32
 	if !inherit {
 		secInfo = api.PROTECTED_DACL_SECURITY_INFORMATION
@@ -54,14 +54,14 @@ func Apply(name string, replace, inherit bool, entries ...api.ExplicitAccess) er
 	)
 }
 
-// ApplyHandle the provided access control entries to a file. If the replace
-// parameter is true, existing entries will be overwritten. If the inherit
-// parameter is true, the file will inherit ACEs from its parent.
+// ApplyHandle the provided access control entries to a handle and objectType pair.
+// If the replace parameter is true, existing entries will be overwritten.
+// If the inherit parameter is true, the object will inherit ACEs from its parent.
 func ApplyHandle(handle windows.Handle, objectType int32, replace, inherit bool, entries ...api.ExplicitAccess) error {
 	var oldAcl windows.Handle
 	if !replace {
 		var secDesc windows.Handle
-		api.GetSecurityInfo(
+		if err := api.GetSecurityInfo(
 			handle,
 			objectType,
 			api.DACL_SECURITY_INFORMATION,
@@ -70,7 +70,9 @@ func ApplyHandle(handle windows.Handle, objectType int32, replace, inherit bool,
 			&oldAcl,
 			nil,
 			&secDesc,
-		)
+		); err != nil {
+			return err
+		}
 		defer windows.LocalFree(secDesc)
 	}
 	var acl windows.Handle
@@ -81,7 +83,7 @@ func ApplyHandle(handle windows.Handle, objectType int32, replace, inherit bool,
 	); err != nil {
 		return err
 	}
-	defer windows.LocalFree((windows.Handle)(unsafe.Pointer(acl)))
+	defer windows.LocalFree(acl)
 	var secInfo uint32
 	if !inherit {
 		secInfo = api.PROTECTED_DACL_SECURITY_INFORMATION
